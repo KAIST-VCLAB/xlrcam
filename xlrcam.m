@@ -176,7 +176,7 @@ function xlrcam(CSpace,CAT,hdrscaling,outmedia)
         end
         clear('inimage');
         clear('outimage');
-        close all;
+        % close all; % uncomment for video processing
     end
 end
 
