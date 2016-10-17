@@ -3,7 +3,7 @@
 % ACM Transactions on Graphics, presented in SIGGRAPH 2009.
 % 
 % This is a high-dynamic-range color appearance model implemented in Matlab
-% ver. 1.5 (released in 22/06/2009; last update in 01/19/2016)
+% ver. 1.6 (released in 22/06/2009; last update in 17/10/2016)
 %
 % [Reference]
 % @Article{KimWeyKautz:2009:SIG,
@@ -64,9 +64,9 @@
 % 1.1: 17/01/2015 : update in order to make this code handle rendered images (with zeros) and HDR video tone-mapping (to avoid flickering)
 % 1.2: 16/10/2015 : suport for OpenEXR
 % 1.3: 20/10/2015 : library link fixed for OpenEXR
-% 1.4: 01/18/2016 : adding scale function
-% 1.5: 01/18/2016 : adding media option
-% 1.6: 10/17/2016 : removing clamping luminance for J
+% 1.4: 18/01/2016 : adding scale function
+% 1.5: 18/01/2016 : adding media option
+% 1.6: 17/10/2016 : removing clamping luminance for J
 %=========================================================================%
 %     Copyright (c) 2009-16, Min H. Kim
 %     All rights reserved.
