@@ -66,6 +66,7 @@
 % 1.3: 20/10/2015 : library link fixed for OpenEXR
 % 1.4: 01/18/2016 : adding scale function
 % 1.5: 01/18/2016 : adding media option
+% 1.6: 10/17/2016 : removing clamping luminance for J
 %=========================================================================%
 %     Copyright (c) 2009-16, Min H. Kim
 %     All rights reserved.
@@ -451,7 +452,7 @@ J(k) = 100;
 J = J./100;
 J = 100.*(mda.*(J-1)+1);
 J(J<0) = 1;
-J(J>100) = 100;
+%J(J>100) = 100; % [2016.10.17] this clamping better to be commented for color reproduction
 qa = 0.1308;
 Q = J*(Lw.^qa);
 arat = [11/11, -12/11, 1/11];
