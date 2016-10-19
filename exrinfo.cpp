@@ -1,94 +1,191 @@
-#include <iostream>
+/*============================================================================
+ 
+ OpenEXR for Matlab
+ 
+ Distributed under the MIT License (the "License");
+ see accompanying file LICENSE for details
+ or copy at http://opensource.org/licenses/MIT
+ 
+ Originated from HDRITools - High Dynamic Range Image Tools
+ Copyright 2011 Program of Computer Graphics, Cornell University
 
-#include "ImfRgbaFile.h"
-#include "ImfStringAttribute.h"
-#include "ImfMatrixAttribute.h"
-#include "ImfChannelList.h"
-#include "ImfPixelType.h"
-#include "Iex.h"
+ This software is distributed WITHOUT ANY WARRANTY; without even the
+ implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ See the License for more information.
+ ----------------------------------------------------------------------------- 
+ Authors:
+ Jinwei Gu <jwgu AT cs DOT cornell DOT edu>
+ Edgar Velazquez-Armendariz <eva5 AT cs DOT cornell DOT edu>
+ Manuel Leonhardt <leom AT hs-furtwangen DOT de>
+ 
+ ============================================================================*/
 
-#include "mex.h" 
 
-using namespace Imf;
+#include <string>
+#include <vector>
+#include <cassert>
+
+#include <mex.h>
+#include <matrix.h>
+
+#ifdef __clang__
+  #pragma clang diagnostic push
+  #pragma clang diagnostic ignored "-Wlong-long"
+  #pragma clang diagnostic ignored "-Wdeprecated-register"
+  #pragma clang diagnostic ignored "-Wextra"
+#endif
+
+#include <ImfHeader.h>
+#include <ImfChannelList.h>
+#include <ImfAttribute.h>
+#include <ImfInputFile.h>
+#include <ImfNamespace.h>
+
+#ifdef __clang__
+  #pragma clang diagnostic pop
+#endif
+
+#include "ImfToMatlab.h"
+
+
+using namespace OPENEXR_IMF_INTERNAL_NAMESPACE;
 using namespace Imath;
-using namespace Iex;
-
-using std::cout;
-using std::endl;
-using std::flush;
+using namespace OpenEXRforMatlab;
 
 
-/*
- * Check inputs:
- * only one input argument that is a string (row vector of chars)
- * one or two output arguments
- * 
- * These checks were copied from the MATLAB example file revord.c
- */
-void checkInputs(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
+namespace {
 
-	if (nrhs != 1)
-		mexErrMsgTxt("Incorrect number of input arguments");
+// Temporaty struct to hold a name and a matlab value
+struct Pair
+{
+    const char * name;
+    mxArray * value;
 
-	if (nlhs > 1)
-		mexErrMsgTxt("Incorrect number of output arguments");
+    Pair() : name(NULL), value(NULL) {}
 
-	if (mxIsChar(prhs[0]) != 1)
-		mexErrMsgTxt("Input must be a string");
+    Pair(const char * pName, mxArray * pValue = NULL) :
+    name(pName), value(pValue)
+    {}
 
-	if (mxGetM(prhs[0]) != 1)
-		mexErrMsgTxt("Input must be a row vector.");
+    bool isValid() const {
+        return name != NULL && value != NULL;
+    }
+};
 
-	return;
+
+// Create a cell array with only the name of the channels
+mxArray * getChannelNames(const ChannelList & channels)
+{
+    typedef ChannelList::ConstIterator ChannelIterator;
+
+    std::vector<mxArray *> channelNames;
+    for (ChannelIterator it = channels.begin(); it != channels.end(); ++it)
+    {
+        mxArray * mStr = mxCreateString(it.name());
+        channelNames.push_back(mStr);
+    }
+    assert(!channelNames.empty());
+
+    mxArray * cells = mxCreateCellMatrix(1, channelNames.size());
+    for (size_t i = 0; i != channelNames.size(); ++i) {
+        mxSetCell(cells, i, channelNames[i]);
+    }
+    return cells;
 }
 
-/*
- * Read the header of an EXR file.
- * Code follows examples from ReadingAndWritingImageFiles.pdf, found
- * here:
- * http://www.openexr.com/ReadingAndWritingImageFiles.pdf
- */
-void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) { 
 
-	checkInputs(nlhs, plhs, nrhs, prhs);
-	char *filename = mxArrayToString(prhs[0]);
+// Create and populate a containters.Map object with the attributes
+mxArray * getAttributesMap(const Header& header)
+{
+    std::vector<Pair> attributes;
 
-	try {
-		RgbaInputFile file(filename);
+    // Get the full set of attributes
+    for (Header::ConstIterator it = header.begin(); it != header.end(); ++it) {
+        const Attribute& attr = it.attribute();
+        if (!Attribute::knownType(attr.typeName())) {
+            continue;
+        }
 
-		const ChannelList &ch = file.header().channels();
-		int ix = 1;
-		for (ChannelList::ConstIterator i = ch.begin(); i != ch.end(); ++i) {
-			const Channel &channel = i.channel(); 
-			const char* n = i.name(); // by Min
-			PixelType type = channel.type;
-			const char* t = (type == UINT) ? "uint" : 
-					((type == HALF) ? "half" : "float");
+        Pair pair(it.name());
+        pair.value = toMatlab(attr);
+        if (pair.isValid()) {
+            attributes.push_back(pair);
+        }
+    }
+    assert(!attributes.empty());
 
-			cout << "channel " << ix++ << ": ";
-			cout << t << ": " << n << endl;
-		}
-		const StringAttribute *comments =
-		file.header().findTypedAttribute <StringAttribute> ("comments");
+    // Create cell arrays with the attributes' names and values
+    mxArray * nameCell  = mxCreateCellMatrix(1, attributes.size());
+    mxArray * valueCell = mxCreateCellMatrix(1, attributes.size());
+    for (size_t i = 0; i != attributes.size(); ++i) {
+        mxSetCell(nameCell,  i, mxCreateString(attributes[i].name));
+        mxSetCell(valueCell, i, attributes[i].value);
+    }
 
-		const M44fAttribute *cameraTransform = 
-		file.header().findTypedAttribute <M44fAttribute> ("cameraTransform");
+    // Create the attributes map
+    mxArray* mapHandle = NULL;
+    mxArray* mapArgs[2] = {nameCell, valueCell};
+    if (mexCallMATLAB(1, &mapHandle, 2, &mapArgs[0], "containers.Map") != 0) {
+        mexErrMsgIdAndTxt("OpenEXR:exception",
+            "Could not create the attribute map.");
+        return NULL;
+    }
 
-		if (comments)
-			cout << "comments\n   " << comments->value() << endl;
-
-		if (cameraTransform)
-			cout << "cameraTransform\n" << cameraTransform->value() << flush;
-
-	} catch (const std::exception &exc) {
-		mexErrMsgTxt(exc.what());
-	}
-
-	// Free the memory for the string
-	mxFree(filename);
-
-	return;
-} 
+    return mapHandle;
+}
 
 
+} // namespace
 
+
+void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
+{ 
+    /* Check for proper number of arguments */
+    if (nrhs != 1) {
+        mexErrMsgIdAndTxt("OpenEXR:argument", "The filename is required.");
+    } else if (nlhs > 1) {
+        mexErrMsgIdAndTxt("OpenEXR:argument", "Too many output arguments.");
+    }
+
+    char *inputfilePtr = mxArrayToString(prhs[0]);
+    if (inputfilePtr == NULL) {
+        mexErrMsgIdAndTxt("OpenEXR:argument", "Invalid filename argument.");
+    }
+    // Copy to a string so that the matlab memory may be freed asap
+    const std::string inputfile(inputfilePtr);
+    mxFree(inputfilePtr); inputfilePtr = static_cast<char*>(0);
+    
+    try {
+        // Open a file, but only read the header
+        InputFile image(inputfile.c_str());
+        const Header& header = image.header();
+
+        const Box2i& dw = header.dataWindow();
+        const int width  = dw.max.x - dw.min.x + 1;
+        const int height = dw.max.y - dw.min.y + 1;
+
+        // List of channel names
+        mxArray* channelNames = getChannelNames(header.channels());
+
+        // Attributes map
+        mxArray* attributesMap = getAttributesMap(header);
+
+        // Size in matlab style (rows by columns)
+        const int dataSize[] = {height, width};
+        mxArray* size = fromArray(dataSize);
+
+        // Build the structure
+        const char* fields[] = {"channels", "size", "attributes"};
+        mxArray* bStruct = mxCreateStructMatrix(1, 1,
+            sizeof(fields)/sizeof(const char*), &fields[0]);
+        mxSetField(bStruct, 0, "channels",   channelNames);
+        mxSetField(bStruct, 0, "size",       size);
+        mxSetField(bStruct, 0, "attributes", attributesMap);
+        
+        // Assign the result
+        plhs[0] = bStruct;
+    }
+    catch( std::exception& e ) {
+        mexErrMsgIdAndTxt("OpenEXR:exception", e.what());
+    }
+}

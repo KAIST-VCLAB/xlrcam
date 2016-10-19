@@ -150,7 +150,7 @@ function xlrcam(CSpace,CAT,hdrscaling,outmedia)
         if ~isempty(findstr(filename, '.hdr'))
             inimage = hdrscaling.*readhdr(filename);
         elseif ~isempty(findstr(filename, '.exr'))
-            inimage = hdrscaling.*readexr(filename);
+            inimage = hdrscaling.*exrread(filename);
         else
             return;
         end

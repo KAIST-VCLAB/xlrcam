@@ -1,27 +1,36 @@
 /*============================================================================
-  HDRITools - High Dynamic Range Image Tools
-  Copyright 2008-2011 Program of Computer Graphics, Cornell University
+ 
+ OpenEXR for Matlab
+ 
+ Distributed under the MIT License (the "License");
+ see accompanying file LICENSE for details
+ or copy at http://opensource.org/licenses/MIT
+ 
+ Originated from HDRITools - High Dynamic Range Image Tools
+ Copyright 2011 Program of Computer Graphics, Cornell University
+ 
+ This software is distributed WITHOUT ANY WARRANTY; without even the
+ implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ See the License for more information.
+ -----------------------------------------------------------------------------
+ Authors:
+ Jinwei Gu <jwgu AT cs DOT cornell DOT edu>
+ Edgar Velazquez-Armendariz <eva5 AT cs DOT cornell DOT edu>
+ Manuel Leonhardt <leom AT hs-furtwangen DOT de>
+ 
+ ============================================================================*/
 
-  Distributed under the OSI-approved MIT License (the "License");
-  see accompanying file LICENSE for details.
 
-  This software is distributed WITHOUT ANY WARRANTY; without even the
-  implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-  See the License for more information.
- ----------------------------------------------------------------------------- 
- Primary author:
-     Edgar Velazquez-Armendariz <cs#cornell#edu - eva5>
- Originally based on code by:
-     Jinwei Gu <jwgu@cs.columbia.edu> (2006/02/10)
-============================================================================*/
-
-#if _MSC_VER >= 1600
-# define CHAR16_T wchar_t
-#endif
-
-#include "util.h"
+#include <string>
 
 #include <mex.h>
+
+#ifdef __clang__
+  #pragma clang diagnostic push
+  #pragma clang diagnostic ignored "-Wlong-long"
+  #pragma clang diagnostic ignored "-Wdeprecated-register"
+  #pragma clang diagnostic ignored "-Wextra"
+#endif
 
 #include <ImathBox.h>
 #include <ImfRgba.h>
@@ -30,11 +39,15 @@
 #include <ImfChannelList.h>
 #include <ImfArray.h>
 
-#include <string>
+#ifdef __clang__
+  #pragma clang diagnostic pop
+#endif
 
-using namespace Imf;
+#include "utilities.h"
+
+
+using namespace OPENEXR_IMF_INTERNAL_NAMESPACE;
 using namespace Imath;
-
 
 
 namespace
@@ -137,8 +150,8 @@ mxArray * readPixels(const char * filename)
 
     // Allocate the requied space
     const Box2i & dw = file.header().dataWindow();
-    const int width  = dw.max.x - dw.min.x + 1;
-    const int height = dw.max.y - dw.min.y + 1;
+    const mwSize width  = dw.max.x - dw.min.x + 1;
+    const mwSize height = dw.max.y - dw.min.y + 1;
     const mwSize dims[] = {height, width, 3};
     mxArray * data = mxCreateNumericArray(3, &dims[0], mxSINGLE_CLASS, mxREAL);
     float * buffer = static_cast<float*> (mxGetData(data));
@@ -146,7 +159,7 @@ mxArray * readPixels(const char * filename)
     if (!isYC) {
         readPixels(buffer, file);
     } else {
-        Imf::RgbaInputFile ycFile(filename);
+        OPENEXR_IMF_INTERNAL_NAMESPACE::RgbaInputFile ycFile(filename);
         readPixels(buffer, ycFile);
     }
 
@@ -158,7 +171,7 @@ mxArray * readPixels(const char * filename)
 
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) 
 { 
-    pcg::mexEXRInit();
+    OpenEXRforMatlab::mexEXRInit();
 
     /* Check for proper number of arguments */
     if (nrhs != 1) {

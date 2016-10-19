@@ -1,43 +1,53 @@
-//////////////////////////////////////////////////////////////////////////
-//
-// exrwrite.cpp
-//
-// Matlab interface for writting a float image to exr file
-//
-// exrwrite(img, filename)
-//
-// img can be 2d (gray) or 3d (color) hdr image
-//
-// see also exrread.cpp
-// 
-// Jinwei Gu. 2006/02/10
-// jwgu@cs.columbia.edu
-//
-// Modified by Edgar Velazquez-Armendariz
-// <cs#cornell#edu - eva5>
-//
-// When using mex to compiling it in matlab, make sure to use VC7.1 or above
-// instead of VC6. 
-//////////////////////////////////////////////////////////////////////////
+/*============================================================================
+ 
+ OpenEXR for Matlab
+ 
+ Distributed under the MIT License (the "License");
+ see accompanying file LICENSE for details
+ or copy at http://opensource.org/licenses/MIT
+ 
+ Originated from HDRITools - High Dynamic Range Image Tools
+ Copyright 2011 Program of Computer Graphics, Cornell University
+ 
+ This software is distributed WITHOUT ANY WARRANTY; without even the
+ implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ See the License for more information.
+ -----------------------------------------------------------------------------
+ Authors:
+ Jinwei Gu <jwgu AT cs DOT cornell DOT edu>
+ Edgar Velazquez-Armendariz <eva5 AT cs DOT cornell DOT edu>
+ Manuel Leonhardt <leom AT hs-furtwangen DOT de>
+ 
+ ============================================================================*/
 
-#if _MSC_VER >= 1600
-# define CHAR16_T wchar_t
-#endif
 
-#include "util.h"
+#include <string>
 
 #include <mex.h>
 #include <matrix.h>
-#include <tmwtypes.h>   // Matlab types
+#include <tmwtypes.h>
+
+#ifdef __clang__
+  #pragma clang diagnostic push
+  #pragma clang diagnostic ignored "-Wlong-long"
+  #pragma clang diagnostic ignored "-Wdeprecated-register"
+  #pragma clang diagnostic ignored "-Wextra"
+#endif
 
 #include <ImathBox.h>
 #include <ImfRgba.h>
 #include <ImfRgbaFile.h>
-#include <string>
+#include <ImfNamespace.h>
 
-using namespace Imf;
+#ifdef __clang__
+  #pragma clang diagnostic pop
+#endif
+
+#include "utilities.h"
+
+
+using namespace OPENEXR_IMF_INTERNAL_NAMESPACE;
 using namespace Imath;
-
 
 
 // Templated function to copy data from either a float or a double array
@@ -63,7 +73,7 @@ void copyPixels(Rgba *pixels, const T *img, int width, int height,
 
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) 
 {
-    pcg::mexEXRInit();
+    OpenEXRforMatlab::mexEXRInit();
 
     /* Check for proper number of arguments */
     if (nrhs != 2) {

@@ -1,23 +1,20 @@
-%exrinfo
+function exrinfo( filename )
+%EXRINFO    Read metadata from the header of an OpenEXR image.
+%   INFO = EXRINFO(FILENAME) reads the header of the given OpenEXR
+%   file and returns a struct with the following fields:
+%     channels - a cell array with the names of the image channels.
+%     size     - Matlab-style size of the image: it is an 1x2 matrix
+%                equivalent to [height, width].
+%     attributes - a containters.Map object with the full, raw
+%                attributes from the file. Note that it will
+%                only contain those attributes for which a Matlab
+%                conversion is avaiable.
 %
-%	Display channel types of an EXR image.
+% Note: this implementation uses the ILM IlmImf library version 1.7.
 %
-% -Usage-
-%	exrinfo(filename)
-%
-% -Inputs-
-%	filename	path to image
-%
-% -Outputs-
-%	None
-%
-% Last Modified: 03/11/2008
-function exrinfo(filename)
+% See also CONTAINERS.MAP,EXRREAD,EXRREADCHANNELS
 
-	% This file only exists for the help documentation
-	% the MEX file will be called
-	error('Compile exrinfo.cpp MEX function.');
-
-	return;
-
-
+% Edgar Velazquez-Armendariz (eva5@cs.cornell.edu)
+%
+% (The help system uses this file, but actually doing something with it
+% will employ the mex file).

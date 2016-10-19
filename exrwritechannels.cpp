@@ -1,30 +1,39 @@
 /*============================================================================
-  HDRITools - High Dynamic Range Image Tools
-  Copyright 2011 Program of Computer Graphics, Cornell University
+ 
+ OpenEXR for Matlab
+ 
+ Distributed under the MIT License (the "License");
+ see accompanying file LICENSE for details
+ or copy at http://opensource.org/licenses/MIT
+ 
+ Originated from HDRITools - High Dynamic Range Image Tools
+ Copyright 2011 Program of Computer Graphics, Cornell University
+ 
+ This software is distributed WITHOUT ANY WARRANTY; without even the
+ implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ See the License for more information.
+ -----------------------------------------------------------------------------
+ Authors:
+ Jinwei Gu <jwgu AT cs DOT cornell DOT edu>
+ Edgar Velazquez-Armendariz <eva5 AT cs DOT cornell DOT edu>
+ Manuel Leonhardt <leom AT hs-furtwangen DOT de>
+ 
+ ============================================================================*/
 
-  Distributed under the OSI-approved MIT License (the "License");
-  see accompanying file LICENSE for details.
 
-  This software is distributed WITHOUT ANY WARRANTY; without even the
-  implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-  See the License for more information.
- ----------------------------------------------------------------------------- 
- Primary author:
-     Edgar Velazquez-Armendariz <cs#cornell#edu - eva5>
- Secondary author:
-     Min H. Kim <minhyuk.kim@yale.edu>
-============================================================================*/
-
-#if _MSC_VER >= 1600
-# define CHAR16_T wchar_t
-#endif
-
-
-#include "util.h"
-#include "ImfToMatlab.h"
-#include "MatlabToImf.h"
+#include <string>
+#include <vector>
+#include <memory>
+#include <cassert>
 
 #include <mex.h>
+
+#ifdef __clang__
+  #pragma clang diagnostic push
+  #pragma clang diagnostic ignored "-Wlong-long"
+  #pragma clang diagnostic ignored "-Wdeprecated-register"
+  #pragma clang diagnostic ignored "-Wextra"
+#endif
 
 #include <half.h>
 #include <ImfAttribute.h>
@@ -33,14 +42,18 @@
 #include <ImfOutputFile.h>
 #include <ImfHeader.h>
 #include <ImfChannelList.h>
+#include <ImfNamespace.h>
 
-#include <string>
-#include <vector>
-#include <utility>
-#include <cassert>
+#ifdef __clang__
+  #pragma clang diagnostic pop
+#endif
+
+#include "utilities.h"
+#include "ImfToMatlab.h"
+#include "MatlabToImf.h"
 
 
-namespace pcg
+namespace OpenEXRforMatlab
 {
 
 // Helper struct to hold Matlab pointers to matrices of the same size
@@ -52,9 +65,8 @@ struct MatricesVec
 };
 
 // To hold a vector of attributes
-typedef std::pair<std::string, Imf::Attribute *> AttributePair;
+typedef std::pair<std::string, OPENEXR_IMF_INTERNAL_NAMESPACE::Attribute *> AttributePair;
 typedef std::vector<AttributePair> AttributeVector;
-
 
 
 template<>
@@ -114,10 +126,7 @@ bool toNative(const mxArray * pa, MatricesVec & outData)
         else if (currM != outData.M || currN != outData.N) {
             mexWarnMsgIdAndTxt("OpenEXR:IllegalConversion",
                 "Inconsistent matrix sizes.");
-			mexErrMsgIdAndTxt("OpenEXR:IllegalConversion", "Inconsistent data size (current vs. out): [%d %d] != [%d %d].",
-	            static_cast<int>(currM), static_cast<int>(currN),
-                    static_cast<int>(outData.M), static_cast<int>(outData.N));
-			return false;
+            return false;
         }
         outData.data.push_back(currPair);
     }
@@ -171,7 +180,7 @@ bool toNative(const mxArray * pa, AttributeVector &outAttributes)
 
     assert(names.size() == mxGetNumberOfElements(valuesCell));
     for (size_t i = 0; i != names.size(); ++i) {
-        Imf::Attribute * attr = toAttribute(mxGetCell(valuesCell, i));
+        OPENEXR_IMF_INTERNAL_NAMESPACE::Attribute* attr = toAttribute(mxGetCell(valuesCell, i));
         if (attr != NULL) {
             AttributePair pair(names[i], attr);
             outAttributes.push_back(pair);
@@ -224,12 +233,12 @@ bool toNative(const mxArray * pa,
     }
 }
 
-} // namespace pcg
+} // namespace OpenEXRforMatlab
 
 
 
 
-using namespace pcg;
+using namespace OpenEXRforMatlab;
 
 
 namespace
@@ -240,7 +249,7 @@ class WriteData {
 
 public:
     WriteData(const std::string & filename,
-         Imf::Compression compression, Imf::PixelType targetPixelType,
+         OPENEXR_IMF_INTERNAL_NAMESPACE::Compression compression, OPENEXR_IMF_INTERNAL_NAMESPACE::PixelType targetPixelType,
          const AttributeVector & attributes,
          const std::vector<std::string> & channelNames,
          const MatricesVec channelData);
@@ -258,10 +267,10 @@ public:
 
     inline size_t typeSize() const {
         switch(type()) {
-        case Imf::HALF:
+        case OPENEXR_IMF_INTERNAL_NAMESPACE::HALF:
             return sizeof(half);
             break;
-        case Imf::FLOAT:
+        case OPENEXR_IMF_INTERNAL_NAMESPACE::FLOAT:
             return sizeof(float);
             break;
         default:
@@ -290,11 +299,11 @@ public:
         return m_filename;
     }
 
-    inline Imf::Compression compression() const {
+    inline OPENEXR_IMF_INTERNAL_NAMESPACE::Compression compression() const {
         return m_compression;
     }
 
-    inline Imf::PixelType type() const {
+    inline OPENEXR_IMF_INTERNAL_NAMESPACE::PixelType type() const {
         return m_type;
     }
 
@@ -303,7 +312,7 @@ private:
 
     // Helper function to create local copies of the data if necessary
     template <typename TargetType>
-    char * prepareChannel(const std::pair<const mxArray *, mxClassID> & pair);
+    char* prepareChannel(const std::pair<const mxArray *, mxClassID> & pair);
 
     inline const std::string & channelName (size_t index) const {
         return m_channels[index].first;
@@ -315,8 +324,8 @@ private:
 
     
     const std::string m_filename;
-    const Imf::Compression m_compression;
-    const Imf::PixelType m_type;
+    const OPENEXR_IMF_INTERNAL_NAMESPACE::Compression m_compression;
+    const OPENEXR_IMF_INTERNAL_NAMESPACE::PixelType m_type;
     const size_t m_width;
     const size_t m_height;
 
@@ -327,13 +336,13 @@ private:
     std::vector<DataPair> m_channels;
 
     // Data created through mxMalloc
-    std::vector<void *> m_allocated;
+    std::vector<void*> m_allocated;
 };
 
 
 WriteData::WriteData(const std::string & filename,
-                    Imf::Compression compression,
-                    Imf::PixelType targetPixelType,
+                    OPENEXR_IMF_INTERNAL_NAMESPACE::Compression compression,
+                    OPENEXR_IMF_INTERNAL_NAMESPACE::PixelType targetPixelType,
                     const AttributeVector & attributes,
                     const std::vector<std::string> & channelNames,
                     const MatricesVec channelData) :
@@ -347,10 +356,10 @@ m_attributes(attributes)
     for (size_t i = 0; i < channelNames.size(); ++i) {
         char * data;
         switch (type()) {
-        case Imf::FLOAT:
+        case OPENEXR_IMF_INTERNAL_NAMESPACE::FLOAT:
             data = prepareChannel<float>(channelData.data[i]);
             break;
-        case Imf::HALF:
+        case OPENEXR_IMF_INTERNAL_NAMESPACE::HALF:
             data = prepareChannel<half>(channelData.data[i]);
             break;
         default:
@@ -374,7 +383,7 @@ char * WriteData::prepareChannel(const std::pair<const mxArray *,
     const mxArray* pa       = pair.first;
     const mxClassID srcType = pair.second;
 
-    if (srcType == pcg::mex_traits<TargetType>::classID) {
+    if (srcType == OpenEXRforMatlab::mex_traits<TargetType>::classID) {
         // If the type is compatible, just return a pointer to the Matlab data
         return static_cast<char*>(mxGetData(pa));
     }
@@ -406,11 +415,11 @@ WriteData::~WriteData()
 
 void WriteData::writeEXR() const
 {
-    using namespace Imf;
+    using namespace OPENEXR_IMF_INTERNAL_NAMESPACE;
     using namespace Imath;
 
     Header header(static_cast<int>(width()), static_cast<int>(height()),
-        1.0f,             // aspect ratio
+        1.0f,            // aspect ratio
         V2f(0.0f, 0.0f), // screen window center,
         1.0f,            // screen window width,
         INCREASING_Y,    // line order
@@ -420,12 +429,12 @@ void WriteData::writeEXR() const
     for (AttributeVector::const_iterator it = m_attributes.begin();
         it != m_attributes.end(); ++it)
     {
-        header.insert(it->first, *(it->second));
+        header.insert(it->first.c_str(), *(it->second));
     }
 
     // Insert channels in the header
     for (size_t i = 0; i != size(); ++i) {
-        header.channels().insert(channelName(i), Channel(type()));
+        header.channels().insert(channelName(i).c_str(), Channel(type()));
     }
 
     OutputFile file(filename().c_str(), header);
@@ -433,11 +442,11 @@ void WriteData::writeEXR() const
     // Create and populate the frame buffer
     FrameBuffer frameBuffer;
     for (size_t i = 0; i != size(); ++i) {
-        frameBuffer.insert(channelName(i),  // name
-            Slice(type(),                   // type
-                  channelData(i),           // base
-                  typeSize() * xStride(),   // xStride
-                  typeSize() * yStride())); // yStride
+        frameBuffer.insert(channelName(i).c_str(),  // name
+            Slice(type(),                           // type
+                  channelData(i),                   // base
+                  typeSize() * xStride(),           // xStride
+                  typeSize() * yStride()));         // yStride
     }
 
     file.setFrameBuffer(frameBuffer);
@@ -452,8 +461,8 @@ WriteData * prepareArguments(const int nrhs, const mxArray * prhs[])
     int currArg = 0;
 
     std::string filename;
-    Imf::Compression compression = Imf::ZIP_COMPRESSION;
-    Imf::PixelType pixelType = Imf::HALF;
+    OPENEXR_IMF_INTERNAL_NAMESPACE::Compression compression = OPENEXR_IMF_INTERNAL_NAMESPACE::ZIP_COMPRESSION;
+    OPENEXR_IMF_INTERNAL_NAMESPACE::PixelType pixelType = OPENEXR_IMF_INTERNAL_NAMESPACE::HALF;
     
     const mxArray * attribs = NULL;
     AttributeVector attributesVector;
@@ -593,8 +602,8 @@ WriteData * prepareArguments(const int nrhs, const mxArray * prhs[])
     }
 
     // B44[a] only compresses half channels
-    if (pixelType != Imf::HALF && (compression == Imf::B44_COMPRESSION || 
-                                   compression == Imf::B44A_COMPRESSION))
+    if (pixelType != OPENEXR_IMF_INTERNAL_NAMESPACE::HALF && (compression == OPENEXR_IMF_INTERNAL_NAMESPACE::B44_COMPRESSION ||
+                                   compression == OPENEXR_IMF_INTERNAL_NAMESPACE::B44A_COMPRESSION))
     {
         mexWarnMsgIdAndTxt("OpenEXR:compression",
             "B44[A] format stores uncompressed data when the pixel type is not HALF.");
@@ -612,7 +621,7 @@ WriteData * prepareArguments(const int nrhs, const mxArray * prhs[])
 
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) 
 {
-    pcg::mexEXRInit();
+    OpenEXRforMatlab::mexEXRInit();
 
     // Check for proper number of arguments
     if (nrhs < 2) {

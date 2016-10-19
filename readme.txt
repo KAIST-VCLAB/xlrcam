@@ -1,5 +1,4 @@
-[How to use]
-
-1. copy library files (./lib/mac64) to a path (/usr/local/lib) in your 64-bit mac.
-
-2. run 'xlrcam.m' (for help, type 'help xlrcam' in Matlab)
+[Installation for macOS 64]
+1. brew install openexr
+2. run exrmexlibmake.m in Matlab
+3. run xlrcam.m (for help, type 'help xlrcam' in Matlab)

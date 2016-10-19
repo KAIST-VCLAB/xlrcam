@@ -1,41 +1,55 @@
 /*============================================================================
-  HDRITools - High Dynamic Range Image Tools
-  Copyright 2011 Program of Computer Graphics, Cornell University
+ 
+ OpenEXR for Matlab
+ 
+ Distributed under the MIT License (the "License");
+ see accompanying file LICENSE for details
+ or copy at http://opensource.org/licenses/MIT
+ 
+ Originated from HDRITools - High Dynamic Range Image Tools
+ Copyright 2011 Program of Computer Graphics, Cornell University
+ 
+ This software is distributed WITHOUT ANY WARRANTY; without even the
+ implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ See the License for more information.
+ -----------------------------------------------------------------------------
+ Authors:
+ Jinwei Gu <jwgu AT cs DOT cornell DOT edu>
+ Edgar Velazquez-Armendariz <eva5 AT cs DOT cornell DOT edu>
+ Manuel Leonhardt <leom AT hs-furtwangen DOT de>
+ 
+ ============================================================================*/
 
-  Distributed under the OSI-approved MIT License (the "License");
-  see accompanying file LICENSE for details.
-
-  This software is distributed WITHOUT ANY WARRANTY; without even the
-  implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-  See the License for more information.
- ----------------------------------------------------------------------------- 
- Primary author:
-     Edgar Velazquez-Armendariz <cs#cornell#edu - eva5>
-============================================================================*/
-
-#if _MSC_VER >= 1600
-# define CHAR16_T wchar_t
-#endif
-
-#include "util.h"
-
-#include <mex.h>
-
-#include <ImfInputFile.h>
-#include <ImfChannelList.h>
 
 #include <string>
 #include <cassert>
 #include <vector>
 
+#include <mex.h>
 
-using namespace Imf;
+#ifdef __clang__
+  #pragma clang diagnostic push
+  #pragma clang diagnostic ignored "-Wlong-long"
+  #pragma clang diagnostic ignored "-Wdeprecated-register"
+  #pragma clang diagnostic ignored "-Wextra"
+#endif
+
+#include <ImfInputFile.h>
+#include <ImfChannelList.h>
+#include <ImfNamespace.h>
+
+#ifdef __clang__
+  #pragma clang diagnostic pop
+#endif
+
+#include "utilities.h"
+
+
+using namespace OPENEXR_IMF_INTERNAL_NAMESPACE;
 using Imath::Box2i;
 
 
-
-namespace
-{
+namespace {
 
 // Get the strings of the explicitly requested channel names.
 // The first two arguments are the original inputs to mexFunction(...)
@@ -128,14 +142,14 @@ void prepareFrameBuffer(FrameBuffer & fb, const Box2i & dataWindow,
 
         // Get the appropriate sampling factors
         int xSampling = 1, ySampling = 1;
-        ChannelList::ConstIterator cIt = channels.find(requestedChannels[i]);
+        ChannelList::ConstIterator cIt = channels.find(requestedChannels[i].c_str());
         if (cIt != channels.end()) {
             xSampling = cIt.channel().xSampling;
             ySampling = cIt.channel().ySampling;
         }
         
         // Insert the slice in the framebuffer
-        fb.insert(requestedChannels[i], Slice(FLOAT, (char*)(ptr + offset),
+        fb.insert(requestedChannels[i].c_str(), Slice(FLOAT, (char*)(ptr + offset),
             sizeof(float) * xStride,
             sizeof(float) * yStride,
             xSampling, ySampling));
@@ -189,7 +203,7 @@ inline void getChannelNames(const ChannelList & channels,
 
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) 
 { 
-	pcg::mexEXRInit();
+	OpenEXRforMatlab::mexEXRInit();
 
     /* Check for proper number of arguments */
     if (nrhs < 1) {
@@ -222,7 +236,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
             // Validate that the channels are actually on the file
             const ChannelList & channels = img.header().channels();
             for (size_t i = 0; i != channelNames.size(); ++i) {
-                if (channels.find(channelNames[i]) == channels.end()) {
+                if (channels.find(channelNames[i].c_str()) == channels.end()) {
                     mexErrMsgIdAndTxt("OpenEXR:argument",
                         "Channel not in file: %s", channelNames[i].c_str());
                 }
