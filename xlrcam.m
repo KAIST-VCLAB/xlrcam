@@ -67,7 +67,7 @@
 % 1.4: 18/01/2016 : adding scale function
 % 1.5: 18/01/2016 : adding media option
 % 1.6: 17/10/2016 : removing clamping luminance for J
-% 1.7: 21/10/2016 : J offset correction
+% 1.7: 21/10/2016 : introducing a J offset to fix clamping in bright signals
 %=========================================================================%
 %     Copyright (c) 2009-16, Min H. Kim
 %     All rights reserved.
