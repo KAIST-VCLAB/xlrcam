@@ -3,7 +3,7 @@
 % ACM Transactions on Graphics, presented in SIGGRAPH 2009.
 % 
 % This is a high-dynamic-range color appearance model implemented in Matlab
-% ver. 1.8 (released in 22/06/2009; last update in 23/10/2016)
+% ver. 1.9 (released in 22/06/2009; last update in 26/10/2016)
 %
 % [Reference]
 % @Article{KimWeyKautz:2009:SIG,
@@ -69,6 +69,7 @@
 % 1.6: 17/10/2016 : removing clamping luminance for J
 % 1.7: 21/10/2016 : introducing a J offset to fix clamping in bright signals
 % 1.8: 23/10/2016 : removing clamping luminance for J again
+% 1.9: 26/10/2016 : revert to the original J equation
 %=========================================================================%
 %     Copyright (c) 2009-16, Min H. Kim
 %     All rights reserved.
@@ -452,8 +453,8 @@ J = 100.*(-(A-cb).*(csig.^cn)./(A-cb-ca)).^(1/cn);
 J(j) = 1; 
 J(k) = 100;
 J = J./100;
-%J = 100.*(mda.*(J-1)+1); % [original] J function for SIGGRAPH 2009
-J = 100.*(mda.*(J-1)+0.945); % [21.10.2016] Original J calculation has an offset 0.055 that causes clamping in bright signals. An offset -0.055 is introduced to avoid clamping for J coordinates.
+J = 100.*(mda.*(J-1)+1); % [original] J function for SIGGRAPH 2009
+%J = 100.*(mda.*(J-1)+0.945); % [21.10.2016] Original J calculation has an offset 0.055 that causes clamping in bright signals. An offset -0.055 is introduced to avoid clamping for J coordinates.
 J(J<0) = 1;
 %J(J>100) = 100; % [23.10.2016] perceptually higher than 100 for avoiding clammping in reproduction
 qa = 0.1308;
@@ -533,8 +534,8 @@ function [XYZ] = xlrcami(J, C, h, Q, M, XYZw,La,media,CAT,sizeimg,mode)
         J = Q/(Lw.^qa);
     end
     
-%    Jp = (1/mD).*(J./100-1)+1; % [original] Jp function for SIGGRAPH 2009
-    Jp = (1/mD).*(J./100-0.945)+1; % [21.10.2016] Original J calculation has an offset 0.055 that causes clamping in bright signals. An offset -0.055 is introduced to avoid clamping for J coordinates.
+    Jp = (1/mD).*(J./100-1)+1; % [original] Jp function for SIGGRAPH 2009
+%    Jp = (1/mD).*(J./100-0.945)+1; % [21.10.2016] Original J calculation has an offset 0.055 that causes clamping in bright signals. An offset -0.055 is introduced to avoid clamping for J coordinates.
 	
     RGBw =(MCAT02*XYZw')';
     if strcmp(CAT,'CAT')
