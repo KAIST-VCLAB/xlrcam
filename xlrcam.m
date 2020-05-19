@@ -160,6 +160,8 @@ function xlrcam(CSpace,CAT,hdrscaling,outmedia)
 %        inimage = 50.*inimage;%scaling luminance
         outimage = hlcamrep(inimage,outXYZw,outLa,outmedia,CSpace,CAT);
 %        outimage = stretch_hist(outimage); % histgram streching
+        % remove complex part
+        outimage = real(outimage);
         fig = figure; imshow(outimage);
         if strcmp(CSpace,'JCh')
             if strcmp(CAT,'CAT')
