@@ -70,6 +70,7 @@
 % 1.7: 21/10/2016 : introducing a J offset to fix clamping in bright signals
 % 1.8: 23/10/2016 : removing clamping luminance for J again
 % 1.9: 26/10/2016 : revert to the original J equation
+% 1.91: 20/05/2020: minor bug fix in imwrite() - removing the complext part.
 %=========================================================================%
 %     Copyright (c) 2009-16, Min H. Kim
 %     All rights reserved.
